@@ -47,43 +47,44 @@ int isGameKey(char ch) {
     }
 }
 
-int main() {
-    int Pipe[2];
-    pipe(Pipe);
-    int pid;
-
-    if ((pid = fork()) < 0) {
-        printErrorInSysCallToSTDERR();
-    }
-
-    // Child process
-    if (pid == 0) {
-        printf("New process in town\n");
-        // Force our stdin to be the read size of the pipe we made
-        dup2(Pipe[0], 0);
-        execlp(TETRIS_PROG, TETRIS_PROG, NULL);
-        // Gets here only if exelp failed.
-        printErrorInSysCallToSTDERR();
-    }
-
-    /* Father Process */
-    char ch;
-    while (1) {
-        ch = getch();
-        // char from stdin is not a game key.
-        if (!isGameKey(ch)) {
-            continue;
-        }
-
-        if(write(Pipe[1], &ch, 1) < 0) {
-            printErrorInSysCallToSTDERR();
-        }
-        kill(pid, SIGUSR2);
-
-        if (ch == 'q') {
-            break;
-        }
-    }
-
-    return 0;
-}
+//int main() {
+//    int Pipe[2];
+//    pipe(Pipe);
+//    int pid;
+//
+//    if ((pid = fork()) < 0) {
+//        printErrorInSysCallToSTDERR();
+//    }
+//
+//    // Child process
+//    if (pid == 0) {
+//        printf("New process in town\n");
+//        // Force our stdin to be the read size of the pipe we made
+//        dup2(Pipe[0], 0);
+//        execlp(TETRIS_PROG, TETRIS_PROG, NULL);
+//        // Gets here only if exelp failed.
+//        printErrorInSysCallToSTDERR();
+//    }
+//
+// /* Father Process */
+//
+//    char ch;
+//    while (1) {
+//        ch = getch();
+//        // char from stdin is not a game key.
+//        if (!isGameKey(ch)) {
+//            continue;
+//        }
+//
+//        if(write(Pipe[1], &ch, 1) < 0) {
+//            printErrorInSysCallToSTDERR();
+//        }
+//        kill(pid, SIGUSR2);
+//
+//        if (ch == 'q') {
+//            break;
+//        }
+//    }
+//
+//    return 0;
+//}
