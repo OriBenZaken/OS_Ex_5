@@ -11,21 +11,31 @@
 #define BOARD_SIZE 20
 #define HORIZONTAL 0
 #define VERTICAL 1
+#define FLIP 'w'
+#define LEFT 'a'
+#define RIGHT 'd'
+#define DOWN 's'
+#define QUIT 'q'
 
 typedef struct GameBoard {
     char board[BOARD_SIZE][BOARD_SIZE];
-    int x_pos;
-    int y_pos;
+    int x_pos;  // x (row) position of the shape
+    int y_pos;  // y (column0 position of the shape
     int shapeMode;
 } GameBoard;
 
 GameBoard gameBoard;
 
+/**
+ * Initializes an empty game board.
+ * @param gameBoard Game board
+ */
 void clearBoard(GameBoard* gameBoard) {
     int i, j;
     for (i = 0; i < BOARD_SIZE - 1; i++) {
         for (j = 0; j < BOARD_SIZE; j++) {
             if (j == 0 || j == BOARD_SIZE - 1) {
+                // fill side borders with '*'
                 gameBoard->board[i][j] = '*';
                 continue;
             }
@@ -33,6 +43,7 @@ void clearBoard(GameBoard* gameBoard) {
         }
     }
 
+    // fill bottom border with '*'
     for (j = 0; j < BOARD_SIZE; j++) {
         gameBoard->board[BOARD_SIZE - 1][j] = '*';
     }
@@ -40,6 +51,10 @@ void clearBoard(GameBoard* gameBoard) {
 
 void updateShapePosition(GameBoard* gameBoard, int x, int y, int flipped);
 
+/**
+ * Initializes GameBoard struct. Brings the Tetris game to start mode.
+ * @param gameBoard
+ */
 void initializeGameBoard(GameBoard* gameBoard) {
     gameBoard->shapeMode = HORIZONTAL;
     gameBoard->x_pos = 0;
@@ -49,21 +64,32 @@ void initializeGameBoard(GameBoard* gameBoard) {
 
 }
 
+/**
+ * Clears the shape from the game board.
+ * @param gameBoard Game board
+ */
 void clearShape(GameBoard* gameBoard) {
     if (gameBoard->shapeMode == HORIZONTAL) {
         gameBoard->board[gameBoard->x_pos][gameBoard->y_pos] = ' ';
         gameBoard->board[gameBoard->x_pos][gameBoard->y_pos + 1] = ' ';
         gameBoard->board[gameBoard->x_pos][gameBoard->y_pos + 2] = ' ';
     } else {
+        // Vertical
         gameBoard->board[gameBoard->x_pos][gameBoard->y_pos] = ' ';
         gameBoard->board[gameBoard->x_pos + 1][gameBoard->y_pos] = ' ';
         gameBoard->board[gameBoard->x_pos + 2][gameBoard->y_pos] = ' ';
     }
 }
 
+/**
+ * Clears the previous the shape from the board and draws a new one.
+ * @param gameBoard Game board
+ * @param x x position of the new shape.
+ * @param y y position of the new shape.
+ * @param flipped 0 - shape was not flipped before the update, 1 - else
+ */
 void updateShapePosition(GameBoard* gameBoard, int x, int y, int flipped) {
-
-
+    /* check that the new position is not crossing the board borders*/
     if (gameBoard->shapeMode == HORIZONTAL) {
         if (y <= 0)
             return;
@@ -77,7 +103,7 @@ void updateShapePosition(GameBoard* gameBoard, int x, int y, int flipped) {
             return;
     }
 
-    // erase previous shape
+    // erase previous shape if it wasn't flipped before calling this function.
     if (!flipped)
         clearShape(gameBoard);
 
@@ -92,8 +118,8 @@ void updateShapePosition(GameBoard* gameBoard, int x, int y, int flipped) {
         if (x >= BOARD_SIZE - 1) {
             initializeGameBoard(gameBoard);
         }
-
     } else {
+        // Vertical
         gameBoard->board[x][y] = '-';
         gameBoard->board[x + 1][y] = '-';
         gameBoard->board[x + 2][y] = '-';
@@ -104,6 +130,10 @@ void updateShapePosition(GameBoard* gameBoard, int x, int y, int flipped) {
     }
 }
 
+/**
+ * prints the game board.
+ * @param gameBoard Game board
+ */
 void printBoard(GameBoard* gameBoard) {
     system("clear");
     int i, j;
@@ -115,6 +145,10 @@ void printBoard(GameBoard* gameBoard) {
     }
 }
 
+/**
+ * Do the FLIP. changes the shape mode from HORIZONTAL to VERTICAL or the oppisite.
+ * @param gameBoard Game board
+ */
 void changeShapeMode(GameBoard* gameBoard) {
     clearShape(gameBoard);
     int prev_x_pos = gameBoard->x_pos;
@@ -125,41 +159,51 @@ void changeShapeMode(GameBoard* gameBoard) {
     } else  {
         int x = prev_x_pos + 1;
         int y = prev_y_pos - 1;
-
+        /* flip from vertical to horizontal will cause the shape to cross the right game border.*/
         if (y + 2 >= BOARD_SIZE - 1) {
-            y = BOARD_SIZE - 4;
+           y = BOARD_SIZE - 4;
+            /* flip from vertical to horizontal will cause the shape to cross the left game border.*/
+        } else if (y < 1) {
+            y = 1;
         }
         gameBoard->shapeMode = HORIZONTAL;
         updateShapePosition(gameBoard, x, y, 1);
     }
 }
 
-
+/**
+ * Gets a game key from the user and perform the suitable operation.
+ * @param sig
+ */
 void getGameKey(int sig) {
     signal(SIGUSR2, getGameKey);
 
     char ch;
     ch = (char)getchar();
     switch (ch) {
-        case 's':
+        case DOWN:
             updateShapePosition(&gameBoard, gameBoard.x_pos + 1, gameBoard.y_pos, 0);
             break;
-        case 'd':
+        case RIGHT:
             updateShapePosition(&gameBoard, gameBoard.x_pos, gameBoard.y_pos + 1, 0);
             break;
-        case 'a':
+        case LEFT:
             updateShapePosition(&gameBoard, gameBoard.x_pos, gameBoard.y_pos - 1, 0);
             break;
-        case 'w':
+        case FLIP:
             changeShapeMode(&gameBoard);
             break;
-        case 'q': exit(1);
+        case QUIT: exit(1);
         default:
             break;
     }
     printBoard(&gameBoard);
 }
 
+/**
+ * Moves the shape one step down every 1 second.
+ * @param sig
+ */
 void moveShape(int sig) {
     signal(SIGALRM, moveShape);
     alarm(1);
@@ -168,20 +212,24 @@ void moveShape(int sig) {
     printBoard(&gameBoard);
 }
 
+/**
+ * starts the Tetris game.
+ * @param gameBoard Game board.
+ */
 void startGame(GameBoard* gameBoard) {
+    initializeGameBoard(gameBoard);
+    printBoard(gameBoard);
+    signal(SIGALRM, moveShape);
+    alarm(1);
+
+    signal(SIGUSR2, getGameKey);
+    while (1) {
+        // wait until the process gets a siganl.
+        pause();
+    }
 }
 
 
 int main() {
-    initializeGameBoard(&gameBoard);
-    printBoard(&gameBoard);
-    signal(SIGALRM, moveShape);
-    alarm(1);
-
-
-    signal(SIGUSR2, getGameKey);
-    while (1) {
-        pause();
-    }
-
+    startGame(&gameBoard);
 }
